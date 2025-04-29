@@ -1,0 +1,9 @@
+lightgbm
+seaborn
+openpyxl
+pandas
+numpy
+matplotlib
+scikit-learn
+xlrd
+streamlit
