@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CosmoChain ML Deployment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background-color: #f4f7f9;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+        }
+        form {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            font-size: 1.2em;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🧠 Product Classification</h2>
+    <form id="classForm">
+        <label for="rest_quantity_class">Rest Quantity (float):</label>
+        <input type="number" step="any" name="rest_quantity" id="rest_quantity_class" required>
+
+        <label for="quantite_class">Quantity (float):</label>
+        <input type="number" step="any" name="Quantite" id="quantite_class" required>
+
+        <label for="unit_price_class">Unit Price (€):</label>
+        <input type="number" step="any" name="Unit_Price" id="unit_price_class" required>
+
+        <label for="manufacture_date">Manufacture Date:</label>
+        <input type="date" name="Manufacture_Date" id="manufacture_date" required>
+
+        <label for="expiration_date">Expiration Date:</label>
+        <input type="date" name="Expiration_Date" id="expiration_date" required>
+
+        <button type="submit">Predict Class</button>
+    </form>
+    <div id="classResult" class="result"></div>
+
+    <h2>💲 Unit Price Prediction</h2>
+    <form id="priceForm">
+        <label for="product_name">Product Name:</label>
+        <input type="text" name="Product_Name" id="product_name" placeholder="e.g. Aloe Serum" required>
+
+        <label for="quantite_price">Quantity (float):</label>
+        <input type="number" step="any" name="Quantite" id="quantite_price" required>
+
+        <label for="material_category">Material Category:</label>
+        <input type="text" name="Material_Category" id="material_category" placeholder="e.g. Skincare" required>
+
+        <button type="submit">Predict Price</button>
+    </form>
+    <div id="priceResult" class="result"></div>
+
+    <h2>📊 Cluster Assignment (KMeans)</h2>
+    <form id="clusterForm">
+        <label for="rest_quantity_cluster">Rest Quantity (float):</label>
+        <input type="number" step="any" name="rest_quantity" id="rest_quantity_cluster" required>
+
+        <label for="shelf_life">Shelf Life (days):</label>
+        <input type="number" step="any" name="shelf_life" id="shelf_life" required>
+
+        <label for="days_since_manufacture">Days Since Manufacture:</label>
+        <input type="number" step="any" name="days_since_manufacture" id="days_since_manufacture" required>
+
+        <button type="submit">Predict Cluster</button>
+    </form>
+    <div id="clusterResult" class="result"></div>
+    <h2>📈 Sales Forecast (Prophet)</h2>
+    <label for="forecast_date">Select Start Date for Forecast:</label>
+    <input type="date" id="forecast_date" required>
+    <button onclick="fetchForecast()">Show Next 6-Month Forecast</button>
+    <div id="forecastResult" class="result"></div>
+    
+    
+    <script>
+        async function fetchForecast() {
+            const response = await fetch('/predict_forecast');
+            const result = await response.json();
+            const output = document.getElementById("forecastResult");
+    
+            if (response.ok) {
+                let html = "<table border='1' cellpadding='8'><tr><th>Date</th><th>Prediction (€)</th><th>Lower</th><th>Upper</th></tr>";
+                result.forEach(row => {
+                    html += `<tr>
+                                <td>${row.ds}</td>
+                                <td>${parseFloat(row.yhat).toFixed(2)}</td>
+                                <td>${parseFloat(row.yhat_lower).toFixed(2)}</td>
+                                <td>${parseFloat(row.yhat_upper).toFixed(2)}</td>
+                             </tr>`;
+                });
+                html += "</table>";
+                output.innerHTML = html;
+            } else {
+                output.innerHTML = `<span style="color: red;">Error: ${result.error}</span>`;
+            }
+        }
+    </script>
+    
+    <script>
+        // Classification Form Handler
+        document.getElementById('classForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const response = await fetch('/predict_class', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('classResult').innerText =
+                result.Product_Classification !== undefined
+                    ? `Predicted Class: ${result.Product_Classification}`
+                    : `Error: ${result.error}`;
+        });
+
+        // Price Prediction Form Handler
+        document.getElementById('priceForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const response = await fetch('/predict_price', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('priceResult').innerText =
+                result.Unit_Price_Prediction !== undefined
+                    ? `Predicted Price: €${result.Unit_Price_Prediction}`
+                    : `Error: ${result.error}`;
+        });
+
+        // Cluster Form Handler
+        document.getElementById("clusterForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const rest_quantity = parseFloat(document.getElementById("rest_quantity_cluster").value);
+            const shelf_life = parseFloat(document.getElementById("shelf_life").value);
+            const days_since = parseFloat(document.getElementById("days_since_manufacture").value);
+            const response = await fetch("/predict-cluster", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    rest_quantity: rest_quantity,
+                    shelf_life: shelf_life,
+                    days_since_manufacture: days_since,
+                }),
+            });
+            const result = await response.json();
+            const output = document.getElementById("clusterResult");
+            if (response.ok) {
+                output.innerHTML = `Predicted Cluster: <strong>${result.cluster}</strong><br>Label: <strong>${result.label}</strong>`;
+            } else {
+                output.innerHTML = `<span style="color: red;">Error: ${result.error}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>

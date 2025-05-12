@@ -1,0 +1,13 @@
+flask
+flask-sqlalchemy
+flask-migrate
+flask-jwt-extended
+flask-cors
+pymysql
+python-dotenv
+werkzeug
+pandas
+numpy
+scikit-learn
+joblib
+prophet
